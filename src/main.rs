@@ -13,6 +13,7 @@ mod auth;
 mod binary_info;
 mod client;
 mod decrypt;
+mod progress;
 mod requests;
 mod version;
 
@@ -89,12 +90,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let resp = client.download(&info, &mut session).await?;
 
-            let style = indicatif::ProgressStyle::default_bar()
-                .template("{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes_per_sec} {bytes}/{total_bytes} ({eta})")
-                .progress_chars("#>-");
-            let pb = indicatif::ProgressBar::new(info.binary_size);
-            pb.set_style(style);
-
             let (filename, decrypt_key) = if matches.is_present("download-only") {
                 (Cow::from(info.binary_name), None)
             } else {
@@ -117,13 +112,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             };
 
+            let pb = progress::new(info.binary_size);
+
             let st = resp
                 .bytes_stream()
-                .inspect_ok(|c| {
-                    pb.inc(c.len() as u64);
-                })
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
-            let mut reader = BufReader::new(StreamReader::new(st));
+            let reader = progress::wrap_reader(StreamReader::new(st), pb.clone());
+            let mut reader = BufReader::new(reader);
 
             let dest = match output {
                 Some(Destination::File(file)) => file,
@@ -192,7 +187,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             println!("Decrypting file to {}", dest.display());
             let file = File::open(input).await?;
+
+            let md = file.metadata().await?;
+            let pb = progress::new(md.len());
+            let file = progress::wrap_reader(file, pb);
+
             let mut reader = BufReader::new(file);
+
             let out = File::create(dest).await?;
             let mut writer = BufWriter::new(out);
 
