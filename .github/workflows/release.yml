@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install rust
+        uses: hecrj/setup-rust-action@v1
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Test
+        run: cargo test
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: [test]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: frigg
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: frigg.exe
+          - os: macOS-latest
+            target: x86_64-apple-darwin
+            bin: frigg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Install rust
+        uses: hecrj/setup-rust-action@v1
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip release binary
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          version=${GITHUB_REF#refs/tags/}
+          staging="frigg-$version-${{ matrix.target }}"
+          mkdir -p "$staging"
+
+          cp {README.md,LICENSE} "$staging/"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp "target/${{ matrix.target }}/release/frigg.exe" "$staging/"
+            7z a "$staging.zip" "$staging"
+
+            echo "(Get-FileHash \"$staging.zip\" -Algorithm SHA256).Hash | Out-File -Encoding ASCII -NoNewline \"$staging.zip.sha256\"" | pwsh -c -
+
+            echo "::set-output name=ASSET::$staging.zip"
+            echo "::set-output name=ASSET_CHK::$staging.zip.sha256"
+          else
+            cp "target/${{ matrix.target }}/release/frigg" "$staging/"
+            tar czf "$staging.tar.gz"  "$staging"
+
+            echo -n "$(shasum -ba 256 "$staging.tar.gz" | cut -d " " -f 1)" > "$staging.tar.gz.sha256"
+
+            echo "::set-output name=ASSET::$staging.tar.gz"
+            echo "::set-output name=ASSET_CHK::$staging.tar.gz.sha256"
+          fi
+
+      - name: Upload package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_name: ${{ steps.package.outputs.ASSET }}
+          asset_path: ${{ steps.package.outputs.ASSET }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload package checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_name: ${{ steps.package.outputs.ASSET_CHK }}
+          asset_path: ${{ steps.package.outputs.ASSET_CHK }}
+          asset_content_type: application/octet-stream
