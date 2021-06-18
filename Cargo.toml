@@ -1,10 +1,12 @@
 [package]
 name = "frigg"
 version = "0.1.0"
+description = "Download and decrypt stock firmwares for Samsung devices"
 license = "GPL-3.0"
 authors = ["Constantin Nickel <constantin.nickel@gmail.com>"]
 keywords = ["samsung", "firmware", "download"]
 edition = "2018"
+include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
 aes = { version = "0.7" }
