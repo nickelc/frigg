@@ -23,9 +23,9 @@ pico-args = "0.4"
 format_xml = "0.2"
 strong-xml = { version = "0.6" }
 
-futures-util = { version = "0.3", default-features = false, features = ["io"] }
-reqwest = { version = "0.11", features = ["cookies", "stream"] }
-tokio = { version = "1.6", features = ["full"] }
+futures-util = { version = "0.3.15", default-features = false, features = ["io"] }
+reqwest = { version = "0.11.4", features = ["cookies", "stream"] }
+tokio = { version = "1.7", features = ["rt-multi-thread", "macros", "fs"] }
 tokio-util = { version = "0.6", features = ["io"] }
 tracing = "0.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = "0.2.19"
