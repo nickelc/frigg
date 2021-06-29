@@ -19,7 +19,7 @@ type Aes128Ecb = Ecb<Aes128, Pkcs7>;
 pub enum Error {
     Io(io::Error),
     InvalidKey,
-    UnpadError,
+    Unpad,
 }
 
 impl std::error::Error for Error {}
@@ -29,7 +29,7 @@ impl fmt::Display for Error {
         match self {
             Self::Io(_) => f.write_str("io error"),
             Self::InvalidKey => f.write_str("invalid key"),
-            Self::UnpadError => f.write_str("unpadding error"),
+            Self::Unpad => f.write_str("unpadding error"),
         }
     }
 }
@@ -48,7 +48,7 @@ impl From<InvalidKeyIvLength> for Error {
 
 impl From<UnpadError> for Error {
     fn from(_: UnpadError) -> Self {
-        Self::UnpadError
+        Self::Unpad
     }
 }
 
@@ -64,7 +64,7 @@ where
     let mut buf = vec![0; BUF_SIZE];
     let mut buf = ReadBuf::new(&mut buf);
 
-    let mut cipher = Aes128Ecb::new_from_slices(&key, Default::default())?;
+    let mut cipher = Aes128Ecb::new_from_slices(key, Default::default())?;
     let mut eof = false;
     let mut amt = 0;
 
@@ -82,7 +82,7 @@ where
             let new_filled = {
                 let (mut block, remainder) = buf.filled_mut().split_at_mut(BLOCK_SIZE);
                 decrypt_blocks(&mut cipher, &mut block);
-                writer.write_all(&block).await?;
+                writer.write_all(block).await?;
                 amt += block.len() as u64;
                 remainder.len()
             };

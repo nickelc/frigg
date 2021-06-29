@@ -69,9 +69,9 @@ impl Client {
         version: &str,
         session: &mut Session,
     ) -> Result<BinaryInfo, Error> {
-        let check = calc_logic_check(&version, &session.nonce.value);
+        let check = calc_logic_check(version, &session.nonce.value);
 
-        let data = requests::file_info(&model, &region, &version, &check);
+        let data = requests::file_info(model, region, version, &check);
         let xml = self
             .request("NF_DownloadBinaryInform.do", data, session)
             .await?
@@ -119,12 +119,12 @@ impl Client {
         let basename = filename
             .split_once('.')
             .map(|(s, _)| s)
-            .unwrap_or_else(|| &filename);
+            .unwrap_or_else(|| filename);
 
         let basename = &basename[basename.len() - 16..];
-        let check = calc_logic_check(&basename, &session.nonce.value);
+        let check = calc_logic_check(basename, &session.nonce.value);
 
-        let data = requests::init_download(&filename, &check);
+        let data = requests::init_download(filename, &check);
 
         self.request("NF_DownloadBinaryInitForMass.do", data, session)
             .await

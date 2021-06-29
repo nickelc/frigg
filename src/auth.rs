@@ -84,7 +84,7 @@ fn gen_sig(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     data[..pos].copy_from_slice(nonce);
     let data = cipher.encrypt(&mut data, pos)?;
 
-    let mut sig = vec![0; Base64::encoded_len(&data)];
-    Base64::encode(&data, &mut sig)?;
+    let mut sig = vec![0; Base64::encoded_len(data)];
+    Base64::encode(data, &mut sig)?;
     Ok(String::from_utf8(sig)?)
 }
