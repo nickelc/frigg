@@ -14,7 +14,7 @@ base64ct = { version = "1.0", features = ["std"] }
 block-modes = "0.8"
 cipher = { version = "0.3", features = ["std"] }
 generic-array = "0.14"
-md-5 = "0.9"
+md-5 = "0.10"
 
 clap = "2.33.3"
 indicatif = "0.16"
@@ -28,4 +28,4 @@ reqwest = { version = "0.11.4", features = ["cookies", "stream"] }
 tokio = { version = "1.7", features = ["rt-multi-thread", "macros", "fs"] }
 tokio-util = { version = "0.6", features = ["io"] }
 tracing = "0.1"
-tracing-subscriber = "0.2.19"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
