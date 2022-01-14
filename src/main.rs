@@ -3,7 +3,7 @@ use std::io;
 use std::path::PathBuf;
 
 use clap::{crate_description, crate_name, crate_version};
-use clap::{App, AppSettings, Arg};
+use clap::{App, AppSettings};
 use futures_util::TryStreamExt;
 use tokio::fs::File;
 use tokio::io::{BufReader, BufWriter};
@@ -12,6 +12,7 @@ use tokio_util::io::StreamReader;
 mod auth;
 mod binary_info;
 mod client;
+mod commands;
 mod decrypt;
 mod progress;
 mod requests;
@@ -19,6 +20,7 @@ mod version;
 
 use binary_info::{BinaryInfo, DecryptKey};
 use client::Client;
+use commands::{opt, path_arg, required_opt, required_path_arg, AppExt};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -33,92 +35,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subcommand(
             App::new("check")
                 .about("check for the lastest available firmware version")
-                .arg(
-                    Arg::new("model")
-                        .long("model")
-                        .short('m')
-                        .required(true)
-                        .help("device model")
-                        .value_name("MODEL"),
-                )
-                .arg(
-                    Arg::new("region")
-                        .long("region")
-                        .short('r')
-                        .required(true)
-                        .help("region model")
-                        .value_name("REGION"),
-                ),
+                .args_model_region(),
         )
         .subcommand(
             App::new("download")
                 .about("download the latest firmware")
+                .args_model_region()
+                .arg(opt("download-only", "don't decrypt the firmware file"))
                 .arg(
-                    Arg::new("model")
-                        .long("model")
-                        .short('m')
-                        .required(true)
-                        .help("device model")
-                        .value_name("MODEL"),
-                )
-                .arg(
-                    Arg::new("region")
-                        .long("region")
-                        .short('r')
-                        .required(true)
-                        .help("region model")
-                        .value_name("REGION"),
-                )
-                .arg(
-                    Arg::new("download-only")
-                        .long("download-only")
-                        .help("don't decrypt the firmware file"),
-                )
-                .arg(
-                    Arg::new("output")
-                        .allow_invalid_utf8(true)
-                        .value_name("OUTPUT")
-                        .help("output to a specific file or directory"),
+                    path_arg("output", "output to a specific file or directory")
+                        .value_name("OUTPUT"),
                 ),
         )
         .subcommand(
             App::new("decrypt")
                 .about("decrypt a downloaded firmware")
+                .args_model_region()
                 .arg(
-                    Arg::new("model")
-                        .long("model")
-                        .short('m')
-                        .required(true)
-                        .help("device model")
-                        .value_name("MODEL"),
-                )
-                .arg(
-                    Arg::new("region")
-                        .long("region")
-                        .short('r')
-                        .required(true)
-                        .help("region model")
-                        .value_name("REGION"),
-                )
-                .arg(
-                    Arg::new("version")
-                        .long("firmware-version")
+                    required_opt("firmware-version", "")
                         .short('v')
-                        .required(true)
                         .value_name("VERSION"),
                 )
+                .arg(required_path_arg("input", "path to encrypted firmware").value_name("INPUT"))
                 .arg(
-                    Arg::new("input")
-                        .allow_invalid_utf8(true)
-                        .required(true)
-                        .value_name("INPUT")
-                        .help("path to encrypted firmware"),
-                )
-                .arg(
-                    Arg::new("output")
-                        .allow_invalid_utf8(true)
-                        .value_name("OUTPUT")
-                        .help("output to a specific file or directory"),
+                    path_arg("output", "output to a specific file or directory")
+                        .value_name("OUTPUT"),
                 ),
         );
 
