@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::io;
 use std::path::PathBuf;
 
-use clap::{crate_description, crate_name, crate_version, value_t};
-use clap::{App, AppSettings, SubCommand};
+use clap::{crate_description, crate_name, crate_version};
+use clap::{App, AppSettings, Arg};
 use futures_util::TryStreamExt;
 use tokio::fs::File;
 use tokio::io::{BufReader, BufWriter};
@@ -29,36 +29,103 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new(crate_name!())
         .about(crate_description!())
         .version(crate_version!())
-        .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
-            SubCommand::with_name("check")
+            App::new("check")
                 .about("check for the lastest available firmware version")
-                .arg_from_usage("<model> -m <MODEL>, --model 'device model'")
-                .arg_from_usage("<region> -r <REGION>, --region 'device region'"),
+                .arg(
+                    Arg::new("model")
+                        .long("model")
+                        .short('m')
+                        .required(true)
+                        .help("device model")
+                        .value_name("MODEL"),
+                )
+                .arg(
+                    Arg::new("region")
+                        .long("region")
+                        .short('r')
+                        .required(true)
+                        .help("region model")
+                        .value_name("REGION"),
+                ),
         )
         .subcommand(
-            SubCommand::with_name("download")
+            App::new("download")
                 .about("download the latest firmware")
-                .arg_from_usage("<model> -m <MODEL>, --model 'device model'")
-                .arg_from_usage("<region> -r <REGION>, --region 'device region'")
-                .arg_from_usage("--download-only 'don't decrypt the firmware file'")
-                .arg_from_usage("[output] [OUTPUT] 'output to a specific file or directory'"),
+                .arg(
+                    Arg::new("model")
+                        .long("model")
+                        .short('m')
+                        .required(true)
+                        .help("device model")
+                        .value_name("MODEL"),
+                )
+                .arg(
+                    Arg::new("region")
+                        .long("region")
+                        .short('r')
+                        .required(true)
+                        .help("region model")
+                        .value_name("REGION"),
+                )
+                .arg(
+                    Arg::new("download-only")
+                        .long("download-only")
+                        .help("don't decrypt the firmware file"),
+                )
+                .arg(
+                    Arg::new("output")
+                        .allow_invalid_utf8(true)
+                        .value_name("OUTPUT")
+                        .help("output to a specific file or directory"),
+                ),
         )
         .subcommand(
-            SubCommand::with_name("decrypt")
+            App::new("decrypt")
                 .about("decrypt a downloaded firmware")
-                .arg_from_usage("<model> -m <MODEL>, --model 'device model'")
-                .arg_from_usage("<region> -r <REGION>, --region 'device region'")
-                .arg_from_usage("<version> -v <VERSION>, --firmware-version")
-                .arg_from_usage("<input> <INPUT> 'path to encrypted firmware'")
-                .arg_from_usage("[output] [OUTPUT] 'output to a specific file or directory'"),
+                .arg(
+                    Arg::new("model")
+                        .long("model")
+                        .short('m')
+                        .required(true)
+                        .help("device model")
+                        .value_name("MODEL"),
+                )
+                .arg(
+                    Arg::new("region")
+                        .long("region")
+                        .short('r')
+                        .required(true)
+                        .help("region model")
+                        .value_name("REGION"),
+                )
+                .arg(
+                    Arg::new("version")
+                        .long("firmware-version")
+                        .short('v')
+                        .required(true)
+                        .value_name("VERSION"),
+                )
+                .arg(
+                    Arg::new("input")
+                        .allow_invalid_utf8(true)
+                        .required(true)
+                        .value_name("INPUT")
+                        .help("path to encrypted firmware"),
+                )
+                .arg(
+                    Arg::new("output")
+                        .allow_invalid_utf8(true)
+                        .value_name("OUTPUT")
+                        .help("output to a specific file or directory"),
+                ),
         );
 
     match app.get_matches().subcommand() {
-        ("check", Some(matches)) => {
-            let model = value_t!(matches, "model", String)?;
-            let region = value_t!(matches, "region", String)?;
+        Some(("check", matches)) => {
+            let model = matches.value_of("model").expect("arg is required");
+            let region = matches.value_of("region").expect("arg is required");
 
             let client = Client::new()?;
             let version = client.fetch_version(&model, &region).await?;
@@ -69,9 +136,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             print_info(&model, &region, &info);
         }
-        ("download", Some(matches)) => {
-            let model = value_t!(matches, "model", String)?;
-            let region = value_t!(matches, "region", String)?;
+        Some(("download", matches)) => {
+            let model = matches.value_of("model").expect("arg is required");
+            let region = matches.value_of("region").expect("arg is required");
 
             let output = match matches.value_of_os("output").map(PathBuf::from) {
                 Some(output) if output.is_dir() => Some(Destination::Dir(output)),
@@ -138,12 +205,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             pb.finish_with_message("Download complete");
         }
-        ("decrypt", Some(matches)) => {
-            let model = value_t!(matches, "model", String)?;
-            let region = value_t!(matches, "region", String)?;
-            let version = value_t!(matches, "version", String)?;
+        Some(("decrypt", matches)) => {
+            let model = matches.value_of("model").expect("arg is required");
+            let region = matches.value_of("region").expect("arg is required");
+            let version = matches.value_of("version").expect("arg is required");
 
-            let input = value_t!(matches, "input", PathBuf)?;
+            let input = matches
+                .value_of_os("input")
+                .map(PathBuf::from)
+                .expect("arg is required");
 
             let output = match matches.value_of_os("output").map(PathBuf::from) {
                 Some(output) if output.is_dir() => Some(Destination::Dir(output)),
