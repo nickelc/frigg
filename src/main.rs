@@ -69,13 +69,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let region = matches.value_of("region").expect("arg is required");
 
             let client = Client::new()?;
-            let version = client.fetch_version(&model, &region).await?;
+            let version = client.fetch_version(model, region).await?;
             let mut session = client.begin_session().await?;
             let info = client
-                .file_info(&model, &region, &version, &mut session)
+                .file_info(model, region, &version, &mut session)
                 .await?;
 
-            print_info(&model, &region, &info);
+            print_info(model, region, &info);
         }
         Some(("download", matches)) => {
             let model = matches.value_of("model").expect("arg is required");
@@ -88,13 +88,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let client = Client::new()?;
-            let version = client.fetch_version(&model, &region).await?;
+            let version = client.fetch_version(model, region).await?;
             let mut session = client.begin_session().await?;
             let info = client
-                .file_info(&model, &region, &version, &mut session)
+                .file_info(model, region, &version, &mut session)
                 .await?;
 
-            print_info(&model, &region, &info);
+            print_info(model, region, &info);
 
             let resp = client.download(&info, &mut session).await?;
 
@@ -169,10 +169,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let client = Client::new()?;
             let mut session = client.begin_session().await?;
             let info = client
-                .file_info(&model, &region, &version, &mut session)
+                .file_info(model, region, version, &mut session)
                 .await?;
 
-            print_info(&model, &region, &info);
+            print_info(model, region, &info);
 
             let (filename, decrypt_key) = match (
                 info.decrypt_key,

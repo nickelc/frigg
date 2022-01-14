@@ -45,6 +45,7 @@ struct Body<'a> {
 #[derive(Debug, XmlRead)]
 #[xml(tag = "Results")]
 struct Status<'a> {
+    #[allow(dead_code)]
     #[xml(flatten_text = "Status")]
     value: Cow<'a, str>,
     #[xml(child = "LATEST_FW_VERSION")]

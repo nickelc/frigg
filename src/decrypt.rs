@@ -80,8 +80,8 @@ where
 
         if buf.filled().len() > BLOCK_SIZE {
             let new_filled = {
-                let (mut block, remainder) = buf.filled_mut().split_at_mut(BLOCK_SIZE);
-                decrypt_blocks(&mut cipher, &mut block);
+                let (block, remainder) = buf.filled_mut().split_at_mut(BLOCK_SIZE);
+                decrypt_blocks(&mut cipher, block);
                 writer.write_all(block).await?;
                 amt += block.len() as u64;
                 remainder.len()
@@ -100,12 +100,12 @@ where
     Ok(amt)
 }
 
-fn decrypt_blocks<M, C>(cipher: &mut M, mut ciphertext_blocks: &mut [u8])
+fn decrypt_blocks<M, C>(cipher: &mut M, ciphertext_blocks: &mut [u8])
 where
     M: BlockMode<C, Pkcs7>,
     C: BlockCipher + NewBlockCipher,
 {
-    cipher.decrypt_blocks(to_blocks(&mut ciphertext_blocks));
+    cipher.decrypt_blocks(to_blocks(ciphertext_blocks));
 }
 
 fn to_blocks<N>(data: &mut [u8]) -> &mut [GenericArray<u8, N>]
