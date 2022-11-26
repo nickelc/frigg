@@ -8,6 +8,7 @@ use tokio::io::{AsyncRead, ReadBuf};
 pub fn new(size: u64) -> ProgressBar {
     let style = ProgressStyle::default_bar()
         .template("{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes_per_sec} {bytes}/{total_bytes} ({eta})")
+        .unwrap()
         .progress_chars("#>-");
     let pb = ProgressBar::new(size);
     pb.set_style(style);
