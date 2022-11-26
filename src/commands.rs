@@ -1,6 +1,8 @@
+use std::any::Any;
+
 use clap::builder::ValueParser;
 
-use clap::{Arg, Command};
+use clap::{Arg, ArgMatches, Command};
 
 pub trait CommandExt {
     fn args_model_region(self) -> Command;
@@ -18,6 +20,24 @@ impl CommandExt for Command {
                 .short('r')
                 .value_name("REGION"),
         )
+    }
+}
+
+pub trait ArgMatchesExt {
+    fn _get_one<T: Any + Clone + Send + Sync + 'static>(&self, id: &str) -> Option<&T>;
+
+    fn get_model(&self) -> Option<&String> {
+        self._get_one("model")
+    }
+
+    fn get_region(&self) -> Option<&String> {
+        self._get_one("region")
+    }
+}
+
+impl ArgMatchesExt for ArgMatches {
+    fn _get_one<T: Any + Clone + Send + Sync + 'static>(&self, id: &str) -> Option<&T> {
+        self.get_one(id)
     }
 }
 

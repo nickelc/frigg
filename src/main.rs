@@ -20,7 +20,7 @@ mod version;
 
 use binary_info::{BinaryInfo, DecryptKey};
 use client::Client;
-use commands::{opt, path_arg, required_opt, required_path_arg, CommandExt};
+use commands::{opt, path_arg, required_opt, required_path_arg, ArgMatchesExt, CommandExt};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -68,8 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match app.get_matches().subcommand() {
         Some(("check", matches)) => {
-            let model = matches.get_one::<String>("model").expect("arg is required");
-            let region = matches.get_one::<String>("region").expect("arg is required");
+            let model = matches.get_model().expect("arg is required");
+            let region = matches.get_region().expect("arg is required");
 
             let client = Client::new()?;
             let version = client.fetch_version(model, region).await?;
@@ -81,8 +81,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             print_info(model, region, &info);
         }
         Some(("download", matches)) => {
-            let model = matches.get_one::<String>("model").expect("arg is required");
-            let region = matches.get_one::<String>("region").expect("arg is required");
+            let model = matches.get_model().expect("arg is required");
+            let region = matches.get_region().expect("arg is required");
 
             let output = match matches.get_one::<PathBuf>("output") {
                 Some(output) if output.is_dir() => Some(Destination::Dir(output)),
@@ -150,8 +150,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             pb.finish_with_message("Download complete");
         }
         Some(("decrypt", matches)) => {
-            let model = matches.get_one::<String>("model").expect("arg is required");
-            let region = matches.get_one::<String>("region").expect("arg is required");
+            let model = matches.get_model().expect("arg is required");
+            let region = matches.get_region().expect("arg is required");
             let version = matches
                 .get_one::<String>("version")
                 .expect("arg is required");
