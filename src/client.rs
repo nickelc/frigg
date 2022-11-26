@@ -81,7 +81,7 @@ impl Client {
 
         tracing::debug!(request = "file_info", "{}", xml);
 
-        Ok(binary_info::from_xml(model, region, &xml)?)
+        binary_info::from_xml(model, region, &xml)
     }
 
     pub async fn download(
