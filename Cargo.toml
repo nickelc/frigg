@@ -1,6 +1,6 @@
 [package]
 name = "frigg"
-version = "0.1.0"
+version = "0.2.0"
 description = "Download and decrypt stock firmwares for Samsung devices"
 license = "GPL-3.0"
 authors = ["Constantin Nickel <constantin.nickel@gmail.com>"]
