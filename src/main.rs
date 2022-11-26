@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::{crate_description, crate_name, crate_version};
-use clap::{App, AppSettings};
+use clap::{ArgAction, Command};
 use futures_util::TryStreamExt;
 use tokio::fs::File;
 use tokio::io::{BufReader, BufWriter};
@@ -20,7 +20,7 @@ mod version;
 
 use binary_info::{BinaryInfo, DecryptKey};
 use client::Client;
-use commands::{opt, path_arg, required_opt, required_path_arg, AppExt};
+use commands::{opt, path_arg, required_opt, required_path_arg, CommandExt};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -28,27 +28,30 @@ type Error = Box<dyn std::error::Error>;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let app = App::new(crate_name!())
+    let app = Command::new(crate_name!())
         .about(crate_description!())
         .version(crate_version!())
-        .setting(AppSettings::ArgRequiredElseHelp)
+        .arg_required_else_help(true)
         .subcommand(
-            App::new("check")
+            Command::new("check")
                 .about("check for the lastest available firmware version")
                 .args_model_region(),
         )
         .subcommand(
-            App::new("download")
+            Command::new("download")
                 .about("download the latest firmware")
                 .args_model_region()
-                .arg(opt("download-only", "don't decrypt the firmware file"))
+                .arg(
+                    opt("download-only", "don't decrypt the firmware file")
+                        .action(ArgAction::SetTrue),
+                )
                 .arg(
                     path_arg("output", "output to a specific file or directory")
                         .value_name("OUTPUT"),
                 ),
         )
         .subcommand(
-            App::new("decrypt")
+            Command::new("decrypt")
                 .about("decrypt a downloaded firmware")
                 .args_model_region()
                 .arg(
@@ -65,8 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match app.get_matches().subcommand() {
         Some(("check", matches)) => {
-            let model = matches.value_of("model").expect("arg is required");
-            let region = matches.value_of("region").expect("arg is required");
+            let model = matches.get_one::<String>("model").expect("arg is required");
+            let region = matches.get_one::<String>("region").expect("arg is required");
 
             let client = Client::new()?;
             let version = client.fetch_version(model, region).await?;
@@ -78,10 +81,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             print_info(model, region, &info);
         }
         Some(("download", matches)) => {
-            let model = matches.value_of("model").expect("arg is required");
-            let region = matches.value_of("region").expect("arg is required");
+            let model = matches.get_one::<String>("model").expect("arg is required");
+            let region = matches.get_one::<String>("region").expect("arg is required");
 
-            let output = match matches.value_of_os("output").map(PathBuf::from) {
+            let output = match matches.get_one::<PathBuf>("output") {
                 Some(output) if output.is_dir() => Some(Destination::Dir(output)),
                 Some(output) if !output.exists() => Some(Destination::File(output)),
                 Some(_) | None => None,
@@ -98,7 +101,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let resp = client.download(&info, &mut session).await?;
 
-            let (filename, decrypt_key) = if matches.is_present("download-only") {
+            let (filename, decrypt_key) = if matches.get_flag("download-only") {
                 (Cow::from(info.binary_name), None)
             } else {
                 match (
@@ -128,10 +131,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let reader = progress::wrap_reader(StreamReader::new(st), pb.clone());
             let mut reader = BufReader::new(reader);
 
-            let dest = match output {
-                Some(Destination::File(file)) => file,
-                Some(Destination::Dir(dir)) => dir.join(filename.to_string()),
-                None => PathBuf::from(filename.to_string()),
+            let dest: Cow<'_, Path> = match output {
+                Some(Destination::File(file)) => file.into(),
+                Some(Destination::Dir(dir)) => dir.join(filename.to_string()).into(),
+                None => PathBuf::from(filename.to_string()).into(),
             };
 
             println!("Saving file to {}", dest.display());
@@ -147,16 +150,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             pb.finish_with_message("Download complete");
         }
         Some(("decrypt", matches)) => {
-            let model = matches.value_of("model").expect("arg is required");
-            let region = matches.value_of("region").expect("arg is required");
-            let version = matches.value_of("version").expect("arg is required");
-
-            let input = matches
-                .value_of_os("input")
-                .map(PathBuf::from)
+            let model = matches.get_one::<String>("model").expect("arg is required");
+            let region = matches.get_one::<String>("region").expect("arg is required");
+            let version = matches
+                .get_one::<String>("version")
                 .expect("arg is required");
 
-            let output = match matches.value_of_os("output").map(PathBuf::from) {
+            let input = matches
+                .get_one::<PathBuf>("input")
+                .expect("arg is required");
+
+            let output = match matches.get_one::<PathBuf>("output") {
                 Some(output) if output.is_dir() => Some(Destination::Dir(output)),
                 Some(output) if !output.exists() => Some(Destination::File(output)),
                 Some(output) if output.exists() => {
@@ -190,10 +194,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ => unreachable!(),
             };
 
-            let dest = match output {
-                Some(Destination::File(file)) => file,
-                Some(Destination::Dir(dir)) => dir.join(filename),
-                None => filename,
+            let dest: Cow<'_, Path> = match output {
+                Some(Destination::File(file)) => file.into(),
+                Some(Destination::Dir(dir)) => dir.join(filename).into(),
+                None => filename.into(),
             };
 
             println!("Decrypting file to {}", dest.display());
@@ -216,9 +220,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-enum Destination {
-    Dir(PathBuf),
-    File(PathBuf),
+enum Destination<'a> {
+    Dir(&'a PathBuf),
+    File(&'a PathBuf),
 }
 
 fn print_info(model: &str, region: &str, info: &BinaryInfo) {

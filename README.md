@@ -13,19 +13,14 @@ $ cargo install --git https://github.com/nickelc/frigg.git
 ### Check for the latest available firmware
 ```
 $ frigg help check
-frigg-check
 check for the lastest available firmware version
 
-USAGE:
-    frigg check --model <MODEL> --region <REGION>
+Usage: frigg check --model <MODEL> --region <REGION>
 
-FLAGS:
-    -h, --help    Prints help information
-
-OPTIONS:
-    -m, --model <MODEL>      device model
-    -r, --region <REGION>    device region
-
+Options:
+  -m, --model <MODEL>    device model
+  -r, --region <REGION>  region model
+  -h, --help             Print help information
 ```
 
 #### Example
@@ -44,45 +39,36 @@ Latest Version:
 ### Download a firmware
 ```
 $ frigg help download
-frigg-download
 download the latest firmware
 
-USAGE:
-    frigg download [FLAGS] --model <MODEL> --region <REGION> [OUTPUT]
+Usage: frigg download [OPTIONS] --model <MODEL> --region <REGION> [OUTPUT]
 
-FLAGS:
-        --download-only    don't decrypt
-    -h, --help             Prints help information
+Arguments:
+  [OUTPUT]  output to a specific file or directory
 
-OPTIONS:
-    -m, --model <MODEL>      device model
-    -r, --region <REGION>    device region
-
-ARGS:
-    <OUTPUT>    output to a specific file or directory
-
+Options:
+  -m, --model <MODEL>    device model
+  -r, --region <REGION>  region model
+      --download-only    don't decrypt the firmware file
+  -h, --help             Print help information
 ```
 
 ### Decrypt a firmware
 ```
 $ frigg help decrypt
-frigg-decrypt
 decrypt a downloaded firmware
 
-USAGE:
-    frigg decrypt <INPUT> --model <MODEL> --region <REGION> --firmware-version <VERSION> [OUTPUT]
+Usage: frigg decrypt --model <MODEL> --region <REGION> --firmware-version <VERSION> <INPUT> [OUTPUT]
 
-FLAGS:
-    -h, --help    Prints help information
+Arguments:
+  <INPUT>   path to encrypted firmware
+  [OUTPUT]  output to a specific file or directory
 
-OPTIONS:
-    -m, --model <MODEL>                 device model
-    -r, --region <REGION>               device region
-    -v, --firmware-version <VERSION>
-
-ARGS:
-    <INPUT>     path to encrypted firmware
-    <OUTPUT>    output to a specific file or directory
+Options:
+  -m, --model <MODEL>               device model
+  -r, --region <REGION>             region model
+  -v, --firmware-version <VERSION>
+  -h, --help                        Print help information
 ```
 
 #### Example

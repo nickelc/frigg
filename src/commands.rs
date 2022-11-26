@@ -1,12 +1,13 @@
-pub type App = clap::App<'static>;
-pub type Arg = clap::Arg<'static>;
+use clap::builder::ValueParser;
 
-pub trait AppExt {
-    fn args_model_region(self) -> App;
+use clap::{Arg, Command};
+
+pub trait CommandExt {
+    fn args_model_region(self) -> Command;
 }
 
-impl AppExt for App {
-    fn args_model_region(self) -> App {
+impl CommandExt for Command {
+    fn args_model_region(self) -> Command {
         self.arg(
             required_opt("model", "device model")
                 .short('m')
@@ -29,7 +30,9 @@ pub fn required_opt(name: &'static str, help: &'static str) -> Arg {
 }
 
 pub fn path_arg(name: &'static str, help: &'static str) -> Arg {
-    Arg::new(name).help(help).allow_invalid_utf8(true)
+    Arg::new(name)
+        .help(help)
+        .value_parser(ValueParser::path_buf())
 }
 
 pub fn required_path_arg(name: &'static str, help: &'static str) -> Arg {
