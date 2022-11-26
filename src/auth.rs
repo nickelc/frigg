@@ -41,12 +41,12 @@ pub struct Session {
     pub id: String,
 }
 
-use aes::Aes256;
+use aes::cipher::block_padding::Pkcs7;
+use aes::cipher::{BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 use base64ct::{Base64, Encoding};
-use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, Cbc};
 
-type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
+type Aes256CbcEnc = cbc::Encryptor<aes::Aes256>;
 
 const KEY_1: &[u8] = b"hqzdurufm2c8mf6bsjezu1qgveouv7c7";
 const KEY_2: &[u8] = b"w13r4cvf4hctaujv";
@@ -65,10 +65,9 @@ fn decrypt_nonce(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     let mut buf = vec![0; 32];
     Base64::decode(nonce, &mut buf)?;
 
-    let cipher = Aes256Cbc::new_from_slices(KEY_1, &KEY_1[..16])?;
-    let len = cipher.decrypt(&mut buf)?.len();
-    buf.truncate(len);
-    Ok(String::from_utf8(buf)?)
+    let cipher = Aes256CbcDec::new_from_slices(KEY_1, &KEY_1[..16])?;
+    let buf = cipher.decrypt_padded_mut::<Pkcs7>(&mut buf)?;
+    Ok(String::from_utf8(buf.to_vec())?)
 }
 
 fn gen_sig(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
@@ -78,11 +77,11 @@ fn gen_sig(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
         .chain(KEY_2.iter().copied())
         .collect();
 
-    let cipher = Aes256Cbc::new_from_slices(&derived_key, &derived_key[..16])?;
+    let cipher = Aes256CbcEnc::new_from_slices(&derived_key, &derived_key[..16])?;
     let mut data = [0; 44];
     let pos = nonce.len();
     data[..pos].copy_from_slice(nonce);
-    let data = cipher.encrypt(&mut data, pos)?;
+    let data = cipher.encrypt_padded_mut::<Pkcs7>(&mut data, pos)?;
 
     let mut sig = vec![0; Base64::encoded_len(data)];
     Base64::encode(data, &mut sig)?;

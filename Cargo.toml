@@ -9,10 +9,10 @@ edition = "2018"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
-aes = { version = "0.7" }
+aes = "0.8"
+cbc = "0.1"
 base64ct = { version = "1.0", features = ["std"] }
-block-modes = "0.8"
-cipher = { version = "0.3", features = ["std"] }
+cipher = { version = "0.4", features = ["std"] }
 generic-array = "0.14"
 md-5 = "0.10"
 

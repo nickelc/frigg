@@ -5,15 +5,13 @@ use std::pin::Pin;
 use futures_util::future::poll_fn;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, ReadBuf};
 
+use aes::cipher::block_padding::{Pkcs7, UnpadError};
 use aes::cipher::generic_array::{ArrayLength, GenericArray};
-use aes::{Aes128, BlockCipher, NewBlockCipher};
-use block_modes::block_padding::{Padding, Pkcs7, UnpadError};
-use block_modes::{BlockMode, Ecb, InvalidKeyIvLength};
+use aes::cipher::{BlockDecrypt, InvalidLength, KeyInit};
+use aes::Aes128;
 
 const BUF_SIZE: usize = 4128;
 const BLOCK_SIZE: usize = 4096;
-
-type Aes128Ecb = Ecb<Aes128, Pkcs7>;
 
 #[derive(Debug)]
 pub enum Error {
@@ -40,8 +38,8 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<InvalidKeyIvLength> for Error {
-    fn from(_: InvalidKeyIvLength) -> Self {
+impl From<InvalidLength> for Error {
+    fn from(_: InvalidLength) -> Self {
         Self::InvalidKey
     }
 }
@@ -64,7 +62,7 @@ where
     let mut buf = vec![0; BUF_SIZE];
     let mut buf = ReadBuf::new(&mut buf);
 
-    let mut cipher = Aes128Ecb::new_from_slices(key, Default::default())?;
+    let cipher = Aes128::new_from_slice(key)?;
     let mut eof = false;
     let mut amt = 0;
 
@@ -81,7 +79,7 @@ where
         if buf.filled().len() > BLOCK_SIZE {
             let new_filled = {
                 let (block, remainder) = buf.filled_mut().split_at_mut(BLOCK_SIZE);
-                decrypt_blocks(&mut cipher, block);
+                cipher.decrypt_blocks(to_blocks(block));
                 writer.write_all(block).await?;
                 amt += block.len() as u64;
                 remainder.len()
@@ -89,23 +87,15 @@ where
             buf.filled_mut().copy_within(BLOCK_SIZE.., 0);
             buf.set_filled(new_filled);
         } else {
-            decrypt_blocks(&mut cipher, buf.filled_mut());
+            let block = buf.filled_mut();
+            let buf = cipher.decrypt_padded::<Pkcs7>(block)?;
 
-            let buf = Pkcs7::unpad(buf.filled())?;
             writer.write_all(buf).await?;
             amt += buf.len() as u64;
         }
     }
     writer.flush().await?;
     Ok(amt)
-}
-
-fn decrypt_blocks<M, C>(cipher: &mut M, ciphertext_blocks: &mut [u8])
-where
-    M: BlockMode<C, Pkcs7>,
-    C: BlockCipher + NewBlockCipher,
-{
-    cipher.decrypt_blocks(to_blocks(ciphertext_blocks));
 }
 
 fn to_blocks<N>(data: &mut [u8]) -> &mut [GenericArray<u8, N>]
