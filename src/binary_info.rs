@@ -97,7 +97,10 @@ pub enum DecryptKey {
 }
 
 pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Error> {
-    let msg = Message::from_str(xml)?;
+    // Workaround for an issue with the xml parser: UnexpectedEof
+    let xml = xml.replace("</EDITION >", "</EDITION>");
+
+    let msg = Message::from_str(&xml)?;
 
     let binary_name = msg.body.put.binary_name.to_string();
     let binary_size = msg.body.put.binary_byte_size.parse()?;
