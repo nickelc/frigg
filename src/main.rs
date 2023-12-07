@@ -17,6 +17,7 @@ mod decrypt;
 mod progress;
 mod requests;
 mod version;
+mod xml;
 
 use binary_info::{BinaryInfo, DecryptKey};
 use client::Client;

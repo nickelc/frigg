@@ -21,7 +21,7 @@ indicatif = "0.17"
 pico-args = "0.5"
 
 format_xml = "0.3"
-strong-xml = "0.6"
+roxmltree = "0.19.0"
 
 futures-util = { version = "0.3.15", default-features = false, features = ["io"] }
 reqwest = { version = "0.11.4", features = ["cookies", "stream"] }

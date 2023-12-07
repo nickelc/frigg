@@ -1,82 +1,9 @@
-use std::borrow::Cow;
-
 use generic_array::{typenum::U16, GenericArray};
 use md5::{Digest, Md5};
-use strong_xml::XmlRead;
 
 use crate::auth::calc_logic_check;
+use crate::xml::{self, XmlExt};
 use crate::Error;
-
-macro_rules! data_struct {
-    ($name:tt, $elem:expr) => {
-        #[derive(Debug, XmlRead)]
-        #[xml(tag = $elem)]
-        struct $name<'a> {
-            #[xml(flatten_text = "Data")]
-            data: Cow<'a, str>,
-        }
-
-        impl<'a> std::ops::Deref for $name<'a> {
-            type Target = Cow<'a, str>;
-
-            fn deref(&self) -> &Self::Target {
-                &self.data
-            }
-        }
-    };
-}
-
-#[derive(Debug, XmlRead)]
-#[xml(tag = "FUSMsg")]
-struct Message<'a> {
-    #[xml(child = "FUSBody")]
-    body: Body<'a>,
-}
-
-#[derive(Debug, XmlRead)]
-#[xml(tag = "FUSBody")]
-struct Body<'a> {
-    #[xml(child = "Results")]
-    status: Status<'a>,
-    #[xml(child = "Put")]
-    put: Put<'a>,
-}
-
-#[derive(Debug, XmlRead)]
-#[xml(tag = "Results")]
-struct Status<'a> {
-    #[allow(dead_code)]
-    #[xml(flatten_text = "Status")]
-    value: Cow<'a, str>,
-    #[xml(child = "LATEST_FW_VERSION")]
-    version: LatestVersion<'a>,
-}
-
-data_struct!(LatestVersion, "LATEST_FW_VERSION");
-
-#[derive(Debug, XmlRead)]
-#[xml(tag = "Put")]
-struct Put<'a> {
-    #[xml(child = "DEVICE_MODEL_DISPLAYNAME")]
-    display_name: DisplayName<'a>,
-    #[xml(child = "CURRENT_OS_VERSION")]
-    os_version: OsVersion<'a>,
-    #[xml(child = "BINARY_NAME")]
-    binary_name: BinaryName<'a>,
-    #[xml(child = "BINARY_BYTE_SIZE")]
-    binary_byte_size: BinaryByteSize<'a>,
-    #[xml(child = "MODEL_PATH")]
-    model_path: ModelPath<'a>,
-    #[xml(child = "LOGIC_VALUE_FACTORY")]
-    logic_value_factory: LogicValueFactory<'a>,
-}
-
-data_struct!(DisplayName, "DEVICE_MODEL_DISPLAYNAME");
-data_struct!(OsVersion, "CURRENT_OS_VERSION");
-data_struct!(BinaryName, "BINARY_NAME");
-data_struct!(BinaryByteSize, "BINARY_BYTE_SIZE");
-data_struct!(ModelPath, "MODEL_PATH");
-data_struct!(LogicValueFactory, "LOGIC_VALUE_FACTORY");
 
 #[derive(Debug)]
 pub struct BinaryInfo {
@@ -97,14 +24,25 @@ pub enum DecryptKey {
 }
 
 pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Error> {
-    // Workaround for an issue with the xml parser: UnexpectedEof
-    let xml = xml.replace("</EDITION >", "</EDITION>");
+    let doc = xml::parse(xml)?;
 
-    let msg = Message::from_str(&xml)?;
+    let fields = doc
+        .get_elem(&["FUSMsg", "FUSBody", "Put"])
+        .ok_or("Missing element FUSMsg/FUSBody/Put")?;
 
-    let binary_name = msg.body.put.binary_name.to_string();
-    let binary_size = msg.body.put.binary_byte_size.parse()?;
-    let version = msg.body.status.version.to_string();
+    let binary_name = fields
+        .get_elem_text(&["BINARY_NAME", "Data"])
+        .ok_or("Missing element FUSMsg/FUSBody/Put/BINARY_NAME/Data")?
+        .to_owned();
+    let binary_size = fields
+        .get_elem_text(&["BINARY_BYTE_SIZE", "Data"])
+        .ok_or("Missing element FUSMsg/FUSBody/Put/BINARY_NAME/Data")?
+        .parse()?;
+
+    let version = doc
+        .get_elem_text(&["FUSMsg", "FUSBody", "Results", "LATEST_FW_VERSION", "Data"])
+        .ok_or("Missing element FUSMsg/FUSBody/Results/LATEST_FW_VERSION/Data")?
+        .to_owned();
 
     let decrypt_key = match (
         binary_name.ends_with(".enc2"),
@@ -116,20 +54,39 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
             DecryptKey::V2(key)
         }
         (_, true) => {
-            if msg.body.put.logic_value_factory.is_empty() {
+            let logic_value_factory = fields
+                .get_elem_text(&["LOGIC_VALUE_FACTORY", "Data"])
+                .ok_or("Missing element FUSMsg/FUSBody/Put/LOGIC_VALUE_FACTORY/Data")?;
+
+            if logic_value_factory.is_empty() {
                 tracing::warn!("logic value is empty");
             }
-            let key = calc_logic_check(&version, &msg.body.put.logic_value_factory.data);
+            let key = calc_logic_check(&version, logic_value_factory);
             let key = Md5::digest(key.as_bytes());
             DecryptKey::V4(key)
         }
         _ => DecryptKey::Unknown,
     };
 
+    let display_name = fields
+        .get_elem_text(&["DEVICE_MODEL_DISPLAYNAME", "Data"])
+        .ok_or("Missing element FUSMsg/FUSBody/Put/DEVICE_MODEL_DISPLAYNAME/Data")?
+        .to_owned();
+
+    let os_version = fields
+        .get_elem_text(&["CURRENT_OS_VERSION", "Data"])
+        .ok_or("Missing element FUSMsg/FUSBody/Put/CURRENT_OS_VERSION/Data")?
+        .to_owned();
+
+    let model_path = fields
+        .get_elem_text(&["MODEL_PATH", "Data"])
+        .ok_or("Missing element FUSMsg/FUSBody/Put/MODEL_PATH/Data")?
+        .to_owned();
+
     let info = BinaryInfo {
-        display_name: msg.body.put.display_name.to_string(),
-        os_version: msg.body.put.os_version.to_string(),
-        model_path: msg.body.put.model_path.to_string(),
+        display_name,
+        os_version,
+        model_path,
         binary_name,
         binary_size,
         version,

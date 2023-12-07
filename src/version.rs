@@ -1,31 +1,10 @@
-use std::borrow::Cow;
 use std::fmt;
-use strong_xml::{XmlError, XmlRead};
 
-#[derive(Debug, XmlRead)]
-#[xml(tag = "versioninfo")]
-pub(super) struct VersionInfo<'a> {
-    #[xml(child = "firmware")]
-    firmware: Firmware<'a>,
-}
-
-#[derive(Debug, XmlRead)]
-#[xml(tag = "firmware")]
-struct Firmware<'a> {
-    #[xml(child = "version")]
-    version: Version<'a>,
-}
-
-#[derive(Debug, XmlRead)]
-#[xml(tag = "version")]
-struct Version<'a> {
-    #[xml(flatten_text = "latest")]
-    latest: Cow<'a, str>,
-}
+use crate::xml::{self, XmlExt};
 
 #[derive(Debug)]
 pub enum Error {
-    XmlError(XmlError),
+    XmlError(roxmltree::Error),
     InvalidVersion,
 }
 
@@ -41,11 +20,13 @@ impl fmt::Display for Error {
 }
 
 pub fn from_xml(xml: &str) -> Result<String, Error> {
-    let info = VersionInfo::from_str(xml).map_err(Error::XmlError)?;
-    let version = info.firmware.version.latest;
-    if version.is_empty() {
-        return Err(Error::InvalidVersion);
-    }
+    let doc = xml::parse(xml).map_err(Error::XmlError)?;
+
+    let version = doc
+        .get_elem_text(&["versioninfo", "firmware", "version", "latest"])
+        .filter(|v| !v.is_empty())
+        .ok_or(Error::InvalidVersion)?;
+
     let mut ver = version.split('/').collect::<Vec<_>>();
     if ver.len() == 3 {
         ver.push(ver[0]);
