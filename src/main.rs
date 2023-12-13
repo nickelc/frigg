@@ -228,15 +228,15 @@ enum Destination<'a> {
 
 fn print_info(model: &str, region: &str, info: &BinaryInfo) {
     println!("Name: {}", info.display_name);
-    println!("Model: {}", model);
-    println!("Region: {}", region);
+    println!("Model: {model}");
+    println!("Region: {region}");
     println!("Latest Version:");
     println!("  Version: {}", info.version);
     println!("  OS: {}", info.os_version);
     println!("  Filename: {}", info.binary_name);
     println!("  Size: {} bytes", info.binary_size);
     match info.decrypt_key {
-        DecryptKey::V2(key) | DecryptKey::V4(key) => println!("  Decrypt key: {:02X}", key),
+        DecryptKey::V2(key) | DecryptKey::V4(key) => println!("  Decrypt key: {key:02X}"),
         DecryptKey::Unknown => println!("  Decrypt key is unknown"),
     }
 }

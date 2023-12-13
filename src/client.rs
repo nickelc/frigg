@@ -26,14 +26,12 @@ impl Client {
     }
 
     pub async fn fetch_version(&self, model: &str, region: &str) -> Result<String, Error> {
-        let url = format!(
-            "https://fota-cloud-dn.ospserver.net/firmware/{}/{}/version.xml",
-            region, model
-        );
+        let url =
+            format!("https://fota-cloud-dn.ospserver.net/firmware/{region}/{model}/version.xml",);
         let resp = self.inner.get(url).send().await?;
         let xml = resp.error_for_status()?.text().await?;
 
-        tracing::debug!(request = "fetch_version", "{}", xml);
+        tracing::debug!(request = "fetch_version", "{xml}");
 
         Ok(crate::version::from_xml(&xml)?)
     }
@@ -79,7 +77,7 @@ impl Client {
             .text()
             .await?;
 
-        tracing::debug!(request = "file_info", "{}", xml);
+        tracing::debug!(request = "file_info", "{xml}");
 
         binary_info::from_xml(model, region, &xml)
     }
@@ -136,7 +134,7 @@ impl Client {
         data: String,
         session: &mut Session,
     ) -> Result<Response, Error> {
-        let url = format!("https://neofussvr.sslcs.cdngc.net/{}", path);
+        let url = format!("https://neofussvr.sslcs.cdngc.net/{path}");
 
         let auth = format!(
             r#"FUS nonce="", signature="{}", type="", nc="", realm="", newauth="1""#,

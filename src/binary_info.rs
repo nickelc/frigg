@@ -49,7 +49,7 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
         binary_name.ends_with(".enc4"),
     ) {
         (true, _) => {
-            let key = format!("{}:{}:{}", region, model, version);
+            let key = format!("{region}:{model}:{version}");
             let key = Md5::digest(key.as_bytes());
             DecryptKey::V2(key)
         }
