@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, COOKIE, USER_AGENT};
 use reqwest::Response;
 

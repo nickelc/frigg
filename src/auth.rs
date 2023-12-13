@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use reqwest::header::HeaderValue;
 
 use crate::Error;
