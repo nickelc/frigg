@@ -6,6 +6,7 @@ license = "GPL-3.0"
 authors = ["Constantin Nickel <constantin.nickel@gmail.com>"]
 keywords = ["samsung", "firmware", "download"]
 edition = "2021"
+rust-version = "1.70"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
