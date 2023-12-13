@@ -1,8 +1,8 @@
 use std::fmt;
+use std::future::poll_fn;
 use std::io;
 use std::pin::Pin;
 
-use futures_util::future::poll_fn;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, ReadBuf};
 
 use aes::cipher::block_padding::{Pkcs7, UnpadError};
