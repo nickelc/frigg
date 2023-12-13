@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use generic_array::{typenum::U16, GenericArray};
 use md5::{Digest, Md5};
 
@@ -44,16 +46,13 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
         .ok_or("Missing element FUSMsg/FUSBody/Results/LATEST_FW_VERSION/Data")?
         .to_owned();
 
-    let decrypt_key = match (
-        binary_name.ends_with(".enc2"),
-        binary_name.ends_with(".enc4"),
-    ) {
-        (true, _) => {
+    let decrypt_key = match Path::new(&binary_name).extension() {
+        Some(ext) if ext.eq_ignore_ascii_case("enc2") => {
             let key = format!("{region}:{model}:{version}");
             let key = Md5::digest(key.as_bytes());
             DecryptKey::V2(key)
         }
-        (_, true) => {
+        Some(ext) if ext.eq_ignore_ascii_case("enc4") => {
             let logic_value_factory = fields
                 .get_elem_text(&["LOGIC_VALUE_FACTORY", "Data"])
                 .ok_or("Missing element FUSMsg/FUSBody/Put/LOGIC_VALUE_FACTORY/Data")?;
@@ -65,7 +64,7 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
             let key = Md5::digest(key.as_bytes());
             DecryptKey::V4(key)
         }
-        _ => DecryptKey::Unknown,
+        Some(_) | None => DecryptKey::Unknown,
     };
 
     let display_name = fields
