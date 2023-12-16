@@ -37,7 +37,7 @@ impl Client {
     }
 
     pub async fn begin_session(&self) -> Result<Session, Error> {
-        let url = "https://neofussvr.sslcs.cdngc.net/NF_DownloadGenerateNonce.do";
+        let url = "https://neofussvr.samsungmobile.com/NF_DownloadGenerateNonce.do";
         let resp = self
             .inner
             .get(url)
