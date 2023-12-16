@@ -5,7 +5,7 @@ Download firmware for Samsung devices.
 ## Installation
 
 ```
-$ cargo install --git https://github.com/nickelc/frigg.git
+$ cargo install --git https://github.com/FusionPlmH/frigg-update.git
 ```
 
 ## Usage
