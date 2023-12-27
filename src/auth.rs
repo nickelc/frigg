@@ -59,7 +59,7 @@ pub fn calc_logic_check(input: &str, nonce: &str) -> String {
         .collect()
 }
 
-fn decrypt_nonce(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+fn decrypt_nonce(nonce: &[u8]) -> Result<String, Error> {
     let mut buf = vec![0; 32];
     Base64::decode(nonce, &mut buf)?;
 
@@ -68,7 +68,7 @@ fn decrypt_nonce(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     Ok(String::from_utf8(buf.to_vec())?)
 }
 
-fn gen_sig(nonce: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+fn gen_sig(nonce: &[u8]) -> Result<String, Error> {
     let derived_key: Vec<_> = nonce[0..16]
         .iter()
         .map(|c| KEY_1[(c % 16) as usize])

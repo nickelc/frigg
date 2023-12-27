@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, COOKIE, USER_AGENT};
 use reqwest::Response;
 
@@ -47,13 +48,13 @@ impl Client {
         let nonce = resp
             .headers()
             .get("NONCE")
-            .ok_or_else(|| "missing nonce header".into())
+            .ok_or_else(|| anyhow!("missing nonce header"))
             .and_then(Nonce::try_from)?;
         let id = resp
             .cookies()
             .find(|c| c.name() == "JSESSIONID")
             .map(|c| c.value().to_owned())
-            .ok_or_else::<Error, _>(|| "missing JSESSIONID cookie".into())?;
+            .ok_or_else::<Error, _>(|| anyhow!("missing JSESSIONID cookie"))?;
 
         Ok(Session { nonce, id })
     }

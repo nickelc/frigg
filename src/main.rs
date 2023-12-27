@@ -23,7 +23,7 @@ use binary_info::{BinaryInfo, DecryptKey};
 use client::Client;
 use commands::{opt, path_arg, required_opt, required_path_arg, ArgMatchesExt, CommandExt};
 
-type Error = Box<dyn std::error::Error>;
+type Error = anyhow::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
