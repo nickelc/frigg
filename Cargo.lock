@@ -273,12 +273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fmtools"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f983ed6d4eec47f6b970d69908ceff3ce37a3a9699194ee130fc3e223a351d1a"
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -309,15 +303,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "format_xml"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f38d7f026d70f5b9ab93c958b2d7261618b076c6115008ea19fde31dc123cb24"
-dependencies = [
- "fmtools",
-]
-
-[[package]]
 name = "frigg"
 version = "0.2.0"
 dependencies = [
@@ -327,7 +312,6 @@ dependencies = [
  "cbc",
  "cipher",
  "clap",
- "format_xml",
  "futures-util",
  "generic-array",
  "indicatif",
@@ -338,6 +322,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "xml-rs",
 ]
 
 [[package]]
@@ -1639,3 +1624,9 @@ checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "xml-rs"
+version = "0.8.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
