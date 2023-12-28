@@ -46,8 +46,8 @@ use base64ct::{Base64, Encoding};
 type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
 type Aes256CbcEnc = cbc::Encryptor<aes::Aes256>;
 
-const KEY_1: &[u8] = b"hqzdurufm2c8mf6bsjezu1qgveouv7c7";
-const KEY_2: &[u8] = b"w13r4cvf4hctaujv";
+const KEY_1: &[u8] = b"vicopx7dqu06emacgpnpy8j8zwhduwlh";
+const KEY_2: &[u8] = b"9u7qab84rpc16gvk";
 
 pub fn calc_logic_check(input: &str, nonce: &str) -> String {
     nonce
