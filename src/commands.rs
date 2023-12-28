@@ -5,16 +5,17 @@ use clap::builder::ValueParser;
 use clap::{Arg, ArgMatches, Command};
 
 pub trait CommandExt {
-    fn args_model_region(self) -> Command;
+    fn args_model_imei_region(self) -> Command;
 }
 
 impl CommandExt for Command {
-    fn args_model_region(self) -> Command {
+    fn args_model_imei_region(self) -> Command {
         self.arg(
             required_opt("model", "device model")
                 .short('m')
                 .value_name("MODEL"),
         )
+        .arg(required_opt("imei", "IMEI/serial number").value_name("IMEI"))
         .arg(
             required_opt("region", "region model")
                 .short('r')
@@ -28,6 +29,10 @@ pub trait ArgMatchesExt {
 
     fn get_model(&self) -> Option<&String> {
         self._get_one("model")
+    }
+
+    fn get_imei(&self) -> Option<&String> {
+        self._get_one("imei")
     }
 
     fn get_region(&self) -> Option<&String> {

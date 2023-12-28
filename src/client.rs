@@ -62,13 +62,14 @@ impl Client {
     pub async fn file_info(
         &self,
         model: &str,
+        imei: &str,
         region: &str,
         version: &str,
         session: &mut Session,
     ) -> Result<BinaryInfo, Error> {
         let check = calc_logic_check(version, &session.nonce.value);
 
-        let data = requests::file_info(model, region, version, &check);
+        let data = requests::file_info(model, imei, region, version, &check);
         let xml = self
             .request("NF_DownloadBinaryInform.do", data, session)
             .await?

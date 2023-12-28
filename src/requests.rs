@@ -35,11 +35,12 @@ fn fus_attr(w: &mut XmlWriter<'_>, name: &str, data: &str) -> Result<(), XmlErro
     w.write(XmlEvent::end_element()) // $name
 }
 
-pub fn file_info(model: &str, region: &str, version: &str, check: &str) -> String {
+pub fn file_info(model: &str, imei: &str, region: &str, version: &str, check: &str) -> String {
     fus_xml(|w| {
         fus_attr(w, "ACCESS_MODE", "2")?;
         fus_attr(w, "BINARY_NATURE", "1")?;
         fus_attr(w, "CLIENT_PRODUCT", "Smart Switch")?;
+        fus_attr(w, "DEVICE_IMEI_PUSH", imei)?;
         fus_attr(w, "DEVICE_FW_VERSION", version)?;
         fus_attr(w, "DEVICE_LOCAL_CODE", region)?;
         fus_attr(w, "DEVICE_MODEL_NAME", model)?;
