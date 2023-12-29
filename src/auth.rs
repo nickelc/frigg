@@ -13,16 +13,8 @@ impl TryFrom<&HeaderValue> for Nonce {
     type Error = Error;
 
     fn try_from(value: &HeaderValue) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_bytes())
-    }
-}
-
-impl TryFrom<&[u8]> for Nonce {
-    type Error = Error;
-
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let encoded = String::from_utf8(value.to_vec())?;
-        let nonce = decrypt_nonce(value)?;
+        let encoded = value.to_str()?.to_owned();
+        let nonce = decrypt_nonce(encoded.as_bytes())?;
         let signature = gen_sig(nonce.as_bytes())?;
 
         Ok(Nonce {

@@ -151,8 +151,7 @@ impl Client {
             .await?;
 
         if let Some(nonce) = resp.headers().get("NONCE") {
-            let nonce = Nonce::try_from(nonce.as_bytes())?;
-            session.nonce = nonce;
+            session.nonce = Nonce::try_from(nonce)?;
         }
 
         Ok(resp)
