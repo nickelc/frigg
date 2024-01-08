@@ -36,7 +36,7 @@ impl Client {
     }
 
     pub async fn begin_session(&self) -> Result<Session, Error> {
-        let url = "http://cloud-neofussvr.samsungmobile.com/NF_DownloadGenerateNonce.do";
+        let url = "https://neofussvr.sslcs.cdngc.net/NF_DownloadGenerateNonce.do";
         let resp = self
             .inner
             .get(url)
@@ -92,7 +92,7 @@ impl Client {
             .error_for_status()?;
 
         let url = format!(
-            "http://cloud-neofussvr.samsungmobile.com/NF_DownloadBinaryInitForMass.do?file={}{}",
+            "https://neofussvr.sslcs.cdngc.net/NF_DownloadBinaryInitForMass.do?file={}{}",
             info.model_path, info.binary_name
         );
         let auth = format!(
@@ -134,7 +134,7 @@ impl Client {
         data: String,
         session: &mut Session,
     ) -> Result<Response, Error> {
-        let url = format!("http://cloud-neofussvr.samsungmobile.com/{path}");
+        let url = format!("https://neofussvr.sslcs.cdngc.net/{path}");
 
         let auth = format!(
             r#"FUS nonce="", signature="{}", type="", nc="", realm="", newauth="1""#,
