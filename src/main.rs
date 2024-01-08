@@ -23,7 +23,7 @@ use binary_info::{BinaryInfo, DecryptKey};
 use client::Client;
 use commands::{opt, path_arg, required_opt, required_path_arg, ArgMatchesExt, CommandExt};
 
-type Error = Box<dyn std::error::Error>;
+type Error = anyhow::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,12 +36,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subcommand(
             Command::new("check")
                 .about("check for the lastest available firmware version")
-                .args_model_region(),
+                .args_model_imei_region(),
         )
         .subcommand(
             Command::new("download")
                 .about("download the latest firmware")
-                .args_model_region()
+                .args_model_imei_region()
                 .arg(
                     opt("download-only", "don't decrypt the firmware file")
                         .action(ArgAction::SetTrue),
@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subcommand(
             Command::new("decrypt")
                 .about("decrypt a downloaded firmware")
-                .args_model_region()
+                .args_model_imei_region()
                 .arg(
                     required_opt("firmware-version", "")
                         .short('v')
@@ -70,19 +70,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match app.get_matches().subcommand() {
         Some(("check", matches)) => {
             let model = matches.get_model().expect("arg is required");
+            let imei = matches.get_imei().expect("arg is required");
             let region = matches.get_region().expect("arg is required");
 
             let client = Client::new()?;
             let version = client.fetch_version(model, region).await?;
             let mut session = client.begin_session().await?;
             let info = client
-                .file_info(model, region, &version, &mut session)
+                .file_info(model, imei, region, &version, &mut session)
                 .await?;
 
             print_info(model, region, &info);
         }
         Some(("download", matches)) => {
             let model = matches.get_model().expect("arg is required");
+            let imei = matches.get_imei().expect("arg is required");
             let region = matches.get_region().expect("arg is required");
 
             let output = match matches.get_one::<PathBuf>("output") {
@@ -95,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let version = client.fetch_version(model, region).await?;
             let mut session = client.begin_session().await?;
             let info = client
-                .file_info(model, region, &version, &mut session)
+                .file_info(model, imei, region, &version, &mut session)
                 .await?;
 
             print_info(model, region, &info);
@@ -152,6 +154,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Some(("decrypt", matches)) => {
             let model = matches.get_model().expect("arg is required");
+            let imei = matches.get_imei().expect("arg is required");
             let region = matches.get_region().expect("arg is required");
             let version = matches
                 .get_one::<String>("version")
@@ -174,7 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let client = Client::new()?;
             let mut session = client.begin_session().await?;
             let info = client
-                .file_info(model, region, version, &mut session)
+                .file_info(model, imei, region, version, &mut session)
                 .await?;
 
             print_info(model, region, &info);

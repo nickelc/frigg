@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use anyhow::anyhow;
 use generic_array::{typenum::U16, GenericArray};
 use md5::{Digest, Md5};
 
@@ -30,20 +31,26 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
 
     let fields = doc
         .get_elem(&["FUSMsg", "FUSBody", "Put"])
-        .ok_or("Missing element FUSMsg/FUSBody/Put")?;
+        .ok_or(anyhow!("Missing element FUSMsg/FUSBody/Put"))?;
 
     let binary_name = fields
         .get_elem_text(&["BINARY_NAME", "Data"])
-        .ok_or("Missing element FUSMsg/FUSBody/Put/BINARY_NAME/Data")?
+        .ok_or(anyhow!(
+            "Missing element FUSMsg/FUSBody/Put/BINARY_NAME/Data"
+        ))?
         .to_owned();
     let binary_size = fields
         .get_elem_text(&["BINARY_BYTE_SIZE", "Data"])
-        .ok_or("Missing element FUSMsg/FUSBody/Put/BINARY_NAME/Data")?
+        .ok_or(anyhow!(
+            "Missing element FUSMsg/FUSBody/Put/BINARY_NAME/Data"
+        ))?
         .parse()?;
 
     let version = doc
         .get_elem_text(&["FUSMsg", "FUSBody", "Results", "LATEST_FW_VERSION", "Data"])
-        .ok_or("Missing element FUSMsg/FUSBody/Results/LATEST_FW_VERSION/Data")?
+        .ok_or(anyhow!(
+            "Missing element FUSMsg/FUSBody/Results/LATEST_FW_VERSION/Data"
+        ))?
         .to_owned();
 
     let decrypt_key = match Path::new(&binary_name).extension() {
@@ -55,7 +62,9 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
         Some(ext) if ext.eq_ignore_ascii_case("enc4") => {
             let logic_value_factory = fields
                 .get_elem_text(&["LOGIC_VALUE_FACTORY", "Data"])
-                .ok_or("Missing element FUSMsg/FUSBody/Put/LOGIC_VALUE_FACTORY/Data")?;
+                .ok_or(anyhow!(
+                    "Missing element FUSMsg/FUSBody/Put/LOGIC_VALUE_FACTORY/Data"
+                ))?;
 
             if logic_value_factory.is_empty() {
                 tracing::warn!("logic value is empty");
@@ -69,17 +78,23 @@ pub fn from_xml(model: &str, region: &str, xml: &str) -> Result<BinaryInfo, Erro
 
     let display_name = fields
         .get_elem_text(&["DEVICE_MODEL_DISPLAYNAME", "Data"])
-        .ok_or("Missing element FUSMsg/FUSBody/Put/DEVICE_MODEL_DISPLAYNAME/Data")?
+        .ok_or(anyhow!(
+            "Missing element FUSMsg/FUSBody/Put/DEVICE_MODEL_DISPLAYNAME/Data"
+        ))?
         .to_owned();
 
     let os_version = fields
         .get_elem_text(&["CURRENT_OS_VERSION", "Data"])
-        .ok_or("Missing element FUSMsg/FUSBody/Put/CURRENT_OS_VERSION/Data")?
+        .ok_or(anyhow!(
+            "Missing element FUSMsg/FUSBody/Put/CURRENT_OS_VERSION/Data"
+        ))?
         .to_owned();
 
     let model_path = fields
         .get_elem_text(&["MODEL_PATH", "Data"])
-        .ok_or("Missing element FUSMsg/FUSBody/Put/MODEL_PATH/Data")?
+        .ok_or(anyhow!(
+            "Missing element FUSMsg/FUSBody/Put/MODEL_PATH/Data"
+        ))?
         .to_owned();
 
     let info = BinaryInfo {

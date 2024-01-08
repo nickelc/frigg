@@ -1,5 +1,4 @@
-use std::convert::TryFrom;
-
+use anyhow::anyhow;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, COOKIE, USER_AGENT};
 use reqwest::Response;
 
@@ -49,13 +48,13 @@ impl Client {
         let nonce = resp
             .headers()
             .get("NONCE")
-            .ok_or_else(|| "missing nonce header".into())
+            .ok_or_else(|| anyhow!("missing nonce header"))
             .and_then(Nonce::try_from)?;
         let id = resp
             .cookies()
             .find(|c| c.name() == "JSESSIONID")
             .map(|c| c.value().to_owned())
-            .ok_or_else::<Error, _>(|| "missing JSESSIONID cookie".into())?;
+            .ok_or_else::<Error, _>(|| anyhow!("missing JSESSIONID cookie"))?;
 
         Ok(Session { nonce, id })
     }
@@ -63,13 +62,14 @@ impl Client {
     pub async fn file_info(
         &self,
         model: &str,
+        imei: &str,
         region: &str,
         version: &str,
         session: &mut Session,
     ) -> Result<BinaryInfo, Error> {
         let check = calc_logic_check(version, &session.nonce.value);
 
-        let data = requests::file_info(model, region, version, &check);
+        let data = requests::file_info(model, imei, region, version, &check);
         let xml = self
             .request("NF_DownloadBinaryInform.do", data, session)
             .await?
@@ -151,8 +151,7 @@ impl Client {
             .await?;
 
         if let Some(nonce) = resp.headers().get("NONCE") {
-            let nonce = Nonce::try_from(nonce.as_bytes())?;
-            session.nonce = nonce;
+            session.nonce = Nonce::try_from(nonce)?;
         }
 
         Ok(resp)

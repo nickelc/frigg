@@ -5,7 +5,8 @@ description = "Download and decrypt stock firmwares for Samsung devices"
 license = "GPL-3.0"
 authors = ["Constantin Nickel <constantin.nickel@gmail.com>"]
 keywords = ["samsung", "firmware", "download"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
@@ -16,12 +17,12 @@ cipher = { version = "0.4", features = ["std"] }
 generic-array = "0.14"
 md-5 = "0.10"
 
+anyhow = "1.0.77"
 clap = { version  = "4.0.27", features = ["cargo", "deprecated"] }
 indicatif = "0.17"
-pico-args = "0.5"
 
-format_xml = "0.3"
 roxmltree = "0.19.0"
+xml-rs = "0.8.19"
 
 futures-util = { version = "0.3.15", default-features = false, features = ["io"] }
 reqwest = { version = "0.11.4", features = ["cookies", "stream"] }
