@@ -92,7 +92,7 @@ impl Client {
             .error_for_status()?;
 
         let url = format!(
-            "https://neofussvr.sslcs.cdngc.net/NF_DownloadBinaryInitForMass.do?file={}{}",
+            "http://cloud-neofussvr.samsungmobile.com/NF_DownloadBinaryForMass.do?file={}{}",
             info.model_path, info.binary_name
         );
         let auth = format!(
