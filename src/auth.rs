@@ -25,12 +25,6 @@ impl TryFrom<&HeaderValue> for Nonce {
     }
 }
 
-#[derive(Debug)]
-pub struct Session {
-    pub nonce: Nonce,
-    pub id: String,
-}
-
 use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::{BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 use base64ct::{Base64, Encoding};

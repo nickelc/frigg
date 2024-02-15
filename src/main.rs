@@ -75,9 +75,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let client = Client::new()?;
             let version = client.fetch_version(model, region).await?;
-            let mut session = client.begin_session().await?;
+            let mut nonce = client.generate_nonce().await?;
             let info = client
-                .file_info(model, imei, region, &version, &mut session)
+                .file_info(model, imei, region, &version, &mut nonce)
                 .await?;
 
             print_info(model, region, &info);
@@ -95,14 +95,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let client = Client::new()?;
             let version = client.fetch_version(model, region).await?;
-            let mut session = client.begin_session().await?;
+            let mut nonce = client.generate_nonce().await?;
             let info = client
-                .file_info(model, imei, region, &version, &mut session)
+                .file_info(model, imei, region, &version, &mut nonce)
                 .await?;
 
             print_info(model, region, &info);
 
-            let resp = client.download(&info, &mut session).await?;
+            let resp = client.download(&info, &mut nonce).await?;
 
             let (filename, decrypt_key) = if matches.get_flag("download-only") {
                 (Cow::from(info.binary_name), None)
@@ -175,9 +175,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let client = Client::new()?;
-            let mut session = client.begin_session().await?;
+            let mut nonce = client.generate_nonce().await?;
             let info = client
-                .file_info(model, imei, region, version, &mut session)
+                .file_info(model, imei, region, version, &mut nonce)
                 .await?;
 
             print_info(model, region, &info);
