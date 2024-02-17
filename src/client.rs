@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, USER_AGENT};
+use reqwest::header::AUTHORIZATION;
 use reqwest::Response;
 
 use crate::auth::{calc_logic_check, Nonce};
@@ -13,11 +13,7 @@ pub struct Client {
 
 impl Client {
     pub fn new() -> Result<Self, Error> {
-        let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, HeaderValue::from_static("Kies2.0_FUS"));
-
         let client = reqwest::Client::builder()
-            .default_headers(headers)
             .cookie_store(true)
             .build()?;
 
