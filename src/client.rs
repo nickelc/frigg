@@ -7,6 +7,10 @@ use crate::binary_info::{self, BinaryInfo};
 use crate::requests;
 use crate::Error;
 
+const FOTA_BASE_URL: &str = "https://fota-cloud-dn.ospserver.net";
+const FUS_BASE_URL: &str = "https://neofussvr.sslcs.cdngc.net";
+const DOWNLOAD_BASE_URL: &str = "https://cloud-neofussvr.sslcs.cdngc.net";
+
 pub struct Client {
     inner: reqwest::Client,
 }
@@ -21,8 +25,7 @@ impl Client {
     }
 
     pub async fn fetch_version(&self, model: &str, region: &str) -> Result<String, Error> {
-        let url =
-            format!("https://fota-cloud-dn.ospserver.net/firmware/{region}/{model}/version.xml",);
+        let url = format!("{FOTA_BASE_URL}/firmware/{region}/{model}/version.xml");
         let resp = self.inner.get(url).send().await?;
         let xml = resp.error_for_status()?.text().await?;
 
@@ -32,7 +35,7 @@ impl Client {
     }
 
     pub async fn generate_nonce(&self) -> Result<Nonce, Error> {
-        let url = "https://neofussvr.sslcs.cdngc.net/NF_DownloadGenerateNonce.do";
+        let url = format!("{FUS_BASE_URL}/NF_DownloadGenerateNonce.do");
         let resp = self
             .inner
             .get(url)
@@ -78,7 +81,7 @@ impl Client {
             .error_for_status()?;
 
         let url = format!(
-            "https://cloud-neofussvr.sslcs.cdngc.net/NF_DownloadBinaryInitForMass.do?file={}{}",
+            "{DOWNLOAD_BASE_URL}/NF_DownloadBinaryInitForMass.do?file={}{}",
             info.model_path, info.binary_name
         );
         let auth = format!(
