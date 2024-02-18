@@ -9,7 +9,7 @@ use crate::Error;
 
 const FOTA_BASE_URL: &str = "https://fota-cloud-dn.ospserver.net";
 const FUS_BASE_URL: &str = "https://neofussvr.sslcs.cdngc.net";
-const DOWNLOAD_BASE_URL: &str = "https://cloud-neofussvr.sslcs.cdngc.net";
+const DOWNLOAD_BASE_URL: &str = "https://cloud-neofussvr.samsungmobile.com";
 
 pub struct Client {
     inner: reqwest::Client,
