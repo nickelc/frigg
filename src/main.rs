@@ -157,7 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let imei = matches.get_imei().expect("arg is required");
             let region = matches.get_region().expect("arg is required");
             let version = matches
-                .get_one::<String>("version")
+                .get_one::<String>("firmware-version")
                 .expect("arg is required");
 
             let input = matches
