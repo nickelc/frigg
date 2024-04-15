@@ -10,23 +10,23 @@ rust-version = "1.70"
 include = ["src/**/*", "LICENSE", "README.md"]
 
 [dependencies]
-aes = "0.8"
+aes = "0.8.3"
 cbc = "0.1"
-base64ct = { version = "1.0", features = ["std"] }
-cipher = { version = "0.4", features = ["std"] }
-generic-array = "0.14"
-md-5 = "0.10"
+base64ct = { version = "1.6", features = ["std"] }
+cipher = { version = "0.4.4", features = ["std"] }
+generic-array = "0.14.7"
+md-5 = "0.10.6"
 
-anyhow = "1.0.77"
-clap = { version  = "4.0.27", features = ["cargo", "deprecated"] }
-indicatif = "0.17"
+anyhow = "1.0.82"
+clap = { version = "4.5.4", features = ["cargo", "deprecated"] }
+indicatif = "0.17.7"
 
 roxmltree = "0.19.0"
 xml-rs = "0.8.19"
 
-futures-util = { version = "0.3.15", default-features = false, features = ["io"] }
-reqwest = { version = "0.11.4", features = ["cookies", "stream"] }
-tokio = { version = "1.7", features = ["rt-multi-thread", "macros", "fs"] }
-tokio-util = { version = "0.7", features = ["io"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+futures-util = { version = "0.3.29", default-features = false }
+reqwest = { version = "0.12.3", features = ["cookies", "stream"] }
+tokio = { version = "1.37", features = ["rt-multi-thread", "macros", "fs"] }
+tokio-util = { version = "0.7.10", features = ["io"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

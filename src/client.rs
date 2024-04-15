@@ -1,11 +1,15 @@
 use anyhow::anyhow;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, COOKIE, USER_AGENT};
+use reqwest::header::AUTHORIZATION;
 use reqwest::Response;
 
-use crate::auth::{calc_logic_check, Nonce, Session};
+use crate::auth::{calc_logic_check, Nonce};
 use crate::binary_info::{self, BinaryInfo};
 use crate::requests;
 use crate::Error;
+
+const FOTA_BASE_URL: &str = "https://fota-cloud-dn.ospserver.net";
+const FUS_BASE_URL: &str = "https://neofussvr.sslcs.cdngc.net";
+const DOWNLOAD_BASE_URL: &str = "https://cloud-neofussvr.samsungmobile.com";
 
 pub struct Client {
     inner: reqwest::Client,
@@ -13,11 +17,7 @@ pub struct Client {
 
 impl Client {
     pub fn new() -> Result<Self, Error> {
-        let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, HeaderValue::from_static("Kies2.0_FUS"));
-
         let client = reqwest::Client::builder()
-            .default_headers(headers)
             .cookie_store(true)
             .build()?;
 
@@ -25,8 +25,7 @@ impl Client {
     }
 
     pub async fn fetch_version(&self, model: &str, region: &str) -> Result<String, Error> {
-        let url =
-            format!("https://fota-cloud-dn.ospserver.net/firmware/{region}/{model}/version.xml",);
+        let url = format!("{FOTA_BASE_URL}/firmware/{region}/{model}/version.xml");
         let resp = self.inner.get(url).send().await?;
         let xml = resp.error_for_status()?.text().await?;
 
@@ -35,13 +34,12 @@ impl Client {
         Ok(crate::version::from_xml(&xml)?)
     }
 
-    pub async fn begin_session(&self) -> Result<Session, Error> {
-        let url = "https://neofussvr.sslcs.cdngc.net/NF_DownloadGenerateNonce.do";
+    pub async fn generate_nonce(&self) -> Result<Nonce, Error> {
+        let url = format!("{FUS_BASE_URL}/NF_DownloadGenerateNonce.do");
         let resp = self
             .inner
             .get(url)
             .header(AUTHORIZATION, r#"FUS newauth="1""#)
-            .header(COOKIE, r#"JSESSIONID="#)
             .send()
             .await?;
 
@@ -50,13 +48,8 @@ impl Client {
             .get("NONCE")
             .ok_or_else(|| anyhow!("missing nonce header"))
             .and_then(Nonce::try_from)?;
-        let id = resp
-            .cookies()
-            .find(|c| c.name() == "JSESSIONID")
-            .map(|c| c.value().to_owned())
-            .ok_or_else::<Error, _>(|| anyhow!("missing JSESSIONID cookie"))?;
 
-        Ok(Session { nonce, id })
+        Ok(nonce)
     }
 
     pub async fn file_info(
@@ -65,13 +58,13 @@ impl Client {
         imei: &str,
         region: &str,
         version: &str,
-        session: &mut Session,
+        nonce: &mut Nonce,
     ) -> Result<BinaryInfo, Error> {
-        let check = calc_logic_check(version, &session.nonce.value);
+        let check = calc_logic_check(version, &nonce.value);
 
         let data = requests::file_info(model, imei, region, version, &check);
         let xml = self
-            .request("NF_DownloadBinaryInform.do", data, session)
+            .request("NF_DownloadBinaryInform.do", data, nonce)
             .await?
             .error_for_status()?
             .text()
@@ -82,22 +75,18 @@ impl Client {
         binary_info::from_xml(model, region, &xml)
     }
 
-    pub async fn download(
-        &self,
-        info: &BinaryInfo,
-        session: &mut Session,
-    ) -> Result<Response, Error> {
-        self.init_download(&info.binary_name, session)
+    pub async fn download(&self, info: &BinaryInfo, nonce: &mut Nonce) -> Result<Response, Error> {
+        self.init_download(&info.binary_name, nonce)
             .await?
             .error_for_status()?;
 
         let url = format!(
-            "https://cloud-neofussvr.sslcs.cdngc.net/NF_DownloadBinaryInitForMass.do?file={}{}",
+            "{DOWNLOAD_BASE_URL}/NF_DownloadBinaryInitForMass.do?file={}{}",
             info.model_path, info.binary_name
         );
         let auth = format!(
             r#"FUS nonce="{}", signature="{}", type="", nc="", realm="", newauth="1""#,
-            session.nonce.encoded, session.nonce.signature
+            nonce.encoded, nonce.signature
         );
         let resp = self
             .inner
@@ -109,22 +98,18 @@ impl Client {
         Ok(resp)
     }
 
-    async fn init_download(
-        &self,
-        filename: &str,
-        session: &mut Session,
-    ) -> Result<Response, Error> {
+    async fn init_download(&self, filename: &str, nonce: &mut Nonce) -> Result<Response, Error> {
         let basename = filename
             .split_once('.')
             .map(|(s, _)| s)
             .unwrap_or_else(|| filename);
 
         let basename = &basename[basename.len() - 16..];
-        let check = calc_logic_check(basename, &session.nonce.value);
+        let check = calc_logic_check(basename, &nonce.value);
 
         let data = requests::init_download(filename, &check);
 
-        self.request("NF_DownloadBinaryInitForMass.do", data, session)
+        self.request("NF_DownloadBinaryInitForMass.do", data, nonce)
             .await
     }
 
@@ -132,26 +117,24 @@ impl Client {
         &self,
         path: &str,
         data: String,
-        session: &mut Session,
+        nonce: &mut Nonce,
     ) -> Result<Response, Error> {
         let url = format!("https://neofussvr.sslcs.cdngc.net/{path}");
 
         let auth = format!(
             r#"FUS nonce="", signature="{}", type="", nc="", realm="", newauth="1""#,
-            session.nonce.signature
+            nonce.signature
         );
-        let cookie = format!("JSESSIONID={}", session.id);
         let resp = self
             .inner
             .post(url)
             .header(reqwest::header::AUTHORIZATION, auth)
-            .header(reqwest::header::COOKIE, cookie)
             .body(data)
             .send()
             .await?;
 
-        if let Some(nonce) = resp.headers().get("NONCE") {
-            session.nonce = Nonce::try_from(nonce)?;
+        if let Some(value) = resp.headers().get("NONCE") {
+            *nonce = Nonce::try_from(value)?;
         }
 
         Ok(resp)
